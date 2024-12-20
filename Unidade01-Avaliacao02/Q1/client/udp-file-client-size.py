@@ -24,25 +24,23 @@ while True:
         
         if file_size == 0:
             print("Arquivo não encontrado ou vazio no servidor.")
-       
-            
-
-        print(f"Tamanho do arquivo recebido: {file_size} bytes")
+        else:
+            print(f"Tamanho do arquivo recebido: {file_size} bytes")
 
         
-        print("Gravando arquivo localmente")
-        fd = open(DIRBASE + fileName, 'wb')
+            print("Gravando arquivo localmente")
+            fd = open(DIRBASE + fileName, 'wb')
        
-        file_received = 0
-        while file_received < file_size:
-            data, source = sock.recvfrom(4096)
-            fd.write(data)
-            file_received += len(data)
+            file_received = 0
+            while file_received < file_size:
+                data, source = sock.recvfrom(4096)
+                fd.write(data)
+                file_received += len(data)
         
-        fd.close()
+            fd.close()
 
-        print(f"Arquivo '{fileName}' gravado")
-    except Exception as erro:
+            print(f"Arquivo '{fileName}' gravado")
+     except Exception as erro:
         print(f"Erro: {erro}")
 
 sock.close()
