@@ -18,33 +18,41 @@ while True:
         conn, addr = sock.accept()
         print("Conexão recebida de:", addr)
 
-        # Recebe o nome do arquivo 
-        fileName = conn.recv(512).decode('utf-8').strip()
+        # Recebe o comprimento do nome do arquivo (2 bytes)
+        fileNameLength = conn.recv(2)
+        fileNameLength = int.from_bytes(fileNameLength, 'big')
+
+        # Recebe o nome do arquivo
+        fileName = conn.recv(fileNameLength).decode('utf-8').strip()
         print("Pedido para o arquivo:", fileName)
 
         file_path = os.path.join(DIRBASE, fileName)
+        
         if os.path.exists(file_path):
             file_size = os.path.getsize(file_path)
         else: 
             file_size = 0
-        conn.sendall(file_size.to_bytes(4, 'big'))
-
-        if file_size == 0:
+        
+        # Envia sinalizador e tamanho do arquivo
+        if file_size > 0:
+            conn.sendall(b'\x00\x00')  # Flag de sucesso
+            conn.sendall(file_size.to_bytes(4, 'big'))  # Tamanho do arquivo
+        else:
+            conn.sendall(b'\x00\x01')  # Flag de erro (arquivo não encontrado)
             print(f"Arquivo '{fileName}' não encontrado.")
             conn.close()
             continue
 
         print("Enviando arquivo:", fileName)
         
+        # Envia o conteúdo do arquivo
         fd = open(file_path, 'rb')
-        try:
-            while True:
-                fileData = fd.read(4096)
-                if fileData == "":
-                    break
-                conn.sendall(fileData)
-        finally:
-            fd.close()
+        tam = file_size
+        while tam > 0:
+            fileData = fd.read(4096)
+            conn.sendall(fileData)
+            tam -= len(fileData)
+        fd.close()
 
         print(f"Envio do arquivo '{fileName}' concluído.")
         conn.close()
@@ -54,3 +62,4 @@ while True:
         break
 
 sock.close()
+
