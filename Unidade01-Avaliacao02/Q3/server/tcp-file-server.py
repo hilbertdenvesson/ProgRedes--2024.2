@@ -35,12 +35,16 @@ while True:
             continue
 
         print("Enviando arquivo:", fileName)
-        with open(file_path, 'rb') as fd:
+        
+        fd = open(file_path, 'rb')
+        try:
             while True:
                 fileData = fd.read(4096)
                 if fileData == "":
                     break
                 conn.sendall(fileData)
+        finally:
+            fd.close()
 
         print(f"Envio do arquivo '{fileName}' concluído.")
         conn.close()
