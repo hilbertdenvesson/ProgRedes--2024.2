@@ -30,7 +30,9 @@ while True:
 
         print(f"Tamanho do arquivo recebido: {file_size} bytes")
         print("Gravando arquivo localmente.")
-        with open(os.path.join(DIRBASE, fileName), 'wb') as fd:
+        
+        fd = open(os.path.join(DIRBASE, fileName), 'wb')
+        try:
             file_received = 0
             while file_received < file_size:
                 data = sock.recv(4096)
@@ -38,6 +40,8 @@ while True:
                     break
                 fd.write(data)
                 file_received += len(data)
+        finally:
+            fd.close()
 
         print(f"Arquivo '{fileName}' gravado em '{DIRBASE}{fileName}'")
 
