@@ -24,7 +24,7 @@ while True:
 
         file_path = os.path.join(DIRBASE, fileName)
         if os.path.exists(file_path):
-            file_size = os.path.getsize(file_path) if os.path.exists(file_path) 
+            file_size = os.path.getsize(file_path)
         else: 
             file_size = 0
         conn.sendall(file_size.to_bytes(4, 'big'))
