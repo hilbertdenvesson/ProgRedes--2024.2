@@ -24,7 +24,7 @@ def help(sock):
 
 def sget(sock):
     file_name = input("Digite o nome do arquivo para download: ").strip()
-    if not file_name:
+    if file_name == "":
         print("Nome do arquivo não pode estar vazio.")
         return
 
@@ -32,30 +32,71 @@ def sget(sock):
     file_name_bytes = file_name.encode('utf-8')
     sock.sendall(len(file_name_bytes).to_bytes(2, 'big') + file_name_bytes)
 
-    # Recebe a flag de resposta
     response_flag = sock.recv(2)
     if response_flag == b'\x00\x01':
         print(f"Arquivo '{file_name}' não encontrado no servidor.")
         return
 
-    # Recebe o tamanho do arquivo
     file_size_data = sock.recv(4)
     file_size = int.from_bytes(file_size_data, "big")
     print(f"Tamanho do arquivo recebido: {file_size} bytes")
 
-    # Recebe o arquivo
     local_file_path = os.path.join(DIRBASE, file_name)
     fd = open(local_file_path, 'wb')
-    try:
-        while file_size > 0:
-            data = sock.recv(4096)
-            if data == "":  
-                break
-            fd.write(data)
-            file_size -= len(data)
-    finally:
-        fd.close()
+    while file_size > 0:
+        rec_bytes = sock.recv(4096)
+        fd.write(rec_bytes)
+        file_size -= len(rec_bytes)
+    fd.close()
+
     print(f"Arquivo '{file_name}' gravado em '{local_file_path}'")
+
+def mget(sock):
+    # Solicita ao usuário a máscara de arquivos
+    mask = input("Digite a máscara para selecionar arquivos (ex: *.jpg): ").strip()
+    if mask == "":
+        print("A máscara não pode estar vazia.")
+        return
+
+    # Envia o comando e a máscara ao servidor
+    sock.sendall(b'mget')
+    mask_bytes = mask.encode('utf-8')
+    sock.sendall(len(mask_bytes).to_bytes(2, 'big') + mask_bytes)
+
+    # Recebe resposta inicial do servidor
+    response_flag = sock.recv(2)
+    if response_flag == b'\x00\x01':
+        print(f"Nenhum arquivo encontrado para a máscara '{mask}'.")
+        return
+
+    # Loop para receber múltiplos arquivos
+    while True:
+        # Recebe o tamanho do nome do arquivo
+        file_name_length_data = sock.recv(2)
+        if len(file_name_length_data) == 0:  # Finalização
+            return
+
+        file_name_length = int.from_bytes(file_name_length_data, 'big')
+        file_name = sock.recv(file_name_length).decode('utf-8').strip()
+
+        # Recebe o tamanho do arquivo
+        file_size_data = sock.recv(4)
+        file_size = int.from_bytes(file_size_data, 'big')
+
+        # Inicia a gravação do arquivo recebido
+        local_file_path = os.path.join(DIRBASE, file_name)
+        try:
+            fd = open(local_file_path, 'wb')
+            while file_size > 0:
+                rec_bytes = sock.recv(4096)
+                fd.write(rec_bytes)
+                file_size -= len(rec_bytes)
+        except Exception as e:
+            print(f"Erro ao gravar o arquivo '{file_name}': {e}")
+        finally:
+            fd.close()
+
+        print(f"Arquivo '{file_name}' gravado em '{local_file_path}'")
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((SERVER, PORT))
@@ -65,7 +106,6 @@ sock.settimeout(20)
 while True:
     try:
         command = input("Digite o comando (digite 'help' para ver os comandos disponíveis): ").strip()
-      
 
         if command.lower() == "list":
             list(sock)
@@ -73,6 +113,8 @@ while True:
             help(sock)
         elif command.lower() == "sget":
             sget(sock)
+        elif command.lower() == "mget":
+            mget(sock)
         else:
             print(f"Comando desconhecido: {command}")
             continue
