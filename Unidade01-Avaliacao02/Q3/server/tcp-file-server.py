@@ -1,10 +1,14 @@
 import socket
 import os
 import glob
+import hashlib
 
 DIRBASE = "files/"
 INTERFACE = '127.0.0.1'
 PORT = 12345
+
+#def cget(sock):
+#def hash(socK):
 
 def list(conn):
     try:
