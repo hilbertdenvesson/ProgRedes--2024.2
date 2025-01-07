@@ -1,9 +1,12 @@
 import socket
 import os
+import hashlib
 
 DIRBASE = "files/"
 SERVER = '127.0.0.1'
 PORT = 12345
+#def cget(sock):
+#def hash(sock):
 
 def list(sock):
     sock.sendall(b'list')
